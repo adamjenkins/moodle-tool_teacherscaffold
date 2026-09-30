@@ -45,7 +45,6 @@ $string['cohorts_desc'] = 'Members of the selected site cohorts are added at sta
 $string['enabled'] = 'Enable Teacher scaffold';
 $string['enabled_desc'] = 'When this is off, nobody is restricted. Stages and progress are kept, and come back when it is turned on again.';
 $string['eventtierunlocked'] = 'Stage unlocked';
-$string['eventtierunlockeddesc'] = 'The user with id \'{$a->relateduserid}\' reached stage {$a->tier} of Teacher scaffold.';
 $string['finaltier'] = 'Final stage: everything else';
 $string['health'] = 'Checks';
 $string['healthadmins'] = 'These people are site administrators. Restrictions never apply to them, so they are not guided: {$a}';

@@ -171,6 +171,87 @@ class tracker {
     }
 
     /**
+     * A tracked teacher added a module: record first use, count it, and unlock if the stage is done.
+     *
+     * @param int $userid The user who added the module.
+     * @param string $modname Module short name.
+     */
+    public static function record_module_created(int $userid, string $modname): void {
+        global $DB;
+        if (!self::enabled()) {
+            return;
+        }
+        $record = self::get_record($userid);
+        if (!$record || $record->status !== self::STATUS_ACTIVE) {
+            return;
+        }
+        if (!$DB->record_exists('tool_teacherscaffold_usage', ['userid' => $userid, 'modname' => $modname])) {
+            try {
+                $DB->insert_record('tool_teacherscaffold_usage',
+                    (object)['userid' => $userid, 'modname' => $modname, 'timefirstused' => time()]);
+            } catch (\dml_write_exception $e) {
+                // Recorded by a concurrent request.
+                debugging('Concurrent first use of ' . $modname . ' for user ' . $userid, DEBUG_DEVELOPER);
+            }
+        }
+        $config = new tier_config();
+        if (in_array($modname, $config->modules_in((int)$record->tier))) {
+            $record = self::update($record, ['tieradds' => (int)$record->tieradds + 1]);
+        }
+        // Loop, so that a stage whose modules were all used already (or uninstalled) is passed too.
+        while ($record && $record->status === self::STATUS_ACTIVE
+                && progress::is_complete(progress::for_user($record, $config))) {
+            self::advance($userid, true, $config);
+            $record = self::get_record($userid);
+        }
+    }
+
+    /**
+     * Unlock the next stage, fire tier_unlocked and, if earned and tool_wizards is not active,
+     * congratulate the teacher.
+     *
+     * @param int $userid User id.
+     * @param bool $earned True when the teacher's own action unlocked it (not an admin's).
+     * @param tier_config|null $config Stage configuration, or null for the saved one.
+     * @return bool False if the user is not being guided.
+     */
+    public static function advance(int $userid, bool $earned = false, ?tier_config $config = null): bool {
+        $record = self::get_record($userid);
+        if (!$record || $record->status !== self::STATUS_ACTIVE) {
+            return false;
+        }
+        $config = $config ?? new tier_config();
+        $newtier = min((int)$record->tier + 1, $config->final_tier());
+        $unlocked = $config->unlocked_by_reaching($newtier);
+        $status = $newtier >= $config->final_tier() ? self::STATUS_GRADUATED : self::STATUS_ACTIVE;
+        self::apply_role(self::update($record, ['tier' => $newtier, 'tieradds' => 0, 'status' => $status]));
+
+        \tool_teacherscaffold\event\tier_unlocked::create([
+            'context' => context_system::instance(),
+            'relateduserid' => $userid,
+            'other' => ['tier' => $newtier, 'unlockedmodules' => $unlocked],
+        ])->trigger();
+
+        if ($earned && $unlocked && !self::wizards_active()) {
+            \core\notification::success(get_string('unlocked', 'tool_teacherscaffold',
+                s(tier_config::module_names($unlocked))));
+        }
+        return true;
+    }
+
+    /**
+     * Whether tool_wizards is installed and switched on (RELATIONS.md §2). Plugin-manager lookup
+     * only; this plugin never calls tool_wizards. is_enabled() is not used because it is always
+     * true for admin tools (lib/classes/plugininfo/tool.php).
+     *
+     * @return bool
+     */
+    public static function wizards_active(): bool {
+        $info = \core_plugin_manager::instance()->get_plugin_info('tool_wizards');
+        return $info && !empty($info->versiondb) && (bool)get_config('tool_wizards', 'enabled');
+    }
+
+    /**
      * Opt out: show every activity from now on.
      *
      * @param int $userid User id.
