@@ -63,6 +63,9 @@ final class tracker_test extends \advanced_testcase {
     protected function setUp(): void {
         parent::setUp();
         $this->resetAfterTest();
+        // The observers are registered with 'internal' => false, so they run only once no DB
+        // transaction is open. On PostgreSQL each test runs inside one unless this is called.
+        $this->preventResetByRollback();
         role_manager::sync();
         $this->course = $this->getDataGenerator()->create_course();
         $this->teacher = $this->getDataGenerator()->create_and_enrol($this->course, 'editingteacher');

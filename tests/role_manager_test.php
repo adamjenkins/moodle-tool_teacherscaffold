@@ -302,6 +302,8 @@ final class role_manager_test extends \advanced_testcase {
     public function test_deleted_stage_role_is_rebuilt(): void {
         global $DB;
         $this->resetAfterTest();
+        // The role_deleted observer is not internal: see tracker_test::setUp().
+        $this->preventResetByRollback();
         role_manager::sync();
         $old = role_manager::role_id(1);
         $this->assertFalse(role_manager::needs_sync());
