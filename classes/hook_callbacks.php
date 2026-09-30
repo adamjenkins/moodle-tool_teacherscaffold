@@ -45,6 +45,9 @@ class hook_callbacks {
     public static function before_http_headers(before_http_headers $hook): void {
         global $PAGE, $USER;
 
+        if (!tracker::installed()) {
+            return;
+        }
         role_manager::sync_if_needed();
 
         if (!tracker::enabled() || !isloggedin() || isguestuser()) {

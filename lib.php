@@ -46,7 +46,7 @@ function tool_teacherscaffold_extend_navigation_user_settings(
     ) {
         return;
     }
-    if (!\tool_teacherscaffold\local\tracker::get_record((int)$USER->id)) {
+    if (!\tool_teacherscaffold\local\tracker::installed() || !\tool_teacherscaffold\local\tracker::get_record((int)$USER->id)) {
         return;
     }
     $usernode = $navigation->find('useraccount', navigation_node::TYPE_CONTAINER);

@@ -367,4 +367,58 @@ final class tracker_test extends \advanced_testcase {
             'other' => ['tier' => 2, 'unlockedmodules' => []],
         ]);
     }
+
+    /**
+     * Under "add N", a stage whose modules were all uninstalled is passed rather than blocking.
+     */
+    public function test_addcount_passes_empty_stage(): void {
+        set_config('unlockrule', progress::RULE_ADDCOUNT, 'tool_teacherscaffold');
+        set_config('unlockcount', 1, 'tool_teacherscaffold');
+        // Stage 2 names a module that is no longer installed.
+        set_config('tiers', json_encode([['page'], ['nosuchmod'], ['quiz']]), 'tool_teacherscaffold');
+        role_manager::sync();
+        tracker::reset($this->teacher->id);
+
+        $this->add('page');
+        $this->assertEquals(3, tracker::get_record($this->teacher->id)->tier);
+        $this->assertTrue(course_allowed_module($this->course, 'quiz', $this->teacher));
+    }
+
+    /**
+     * The admin "show everything" action fires one tier_unlocked for the final stage, listing every
+     * module newly allowed in stage order, and does not congratulate.
+     */
+    public function test_graduate_fires_event(): void {
+        \core\notification::fetch();
+        $sink = $this->sink();
+        tracker::graduate($this->teacher->id);
+        $events = $this->unlock_events($sink);
+        $this->assertCount(1, $events);
+        $this->assertSame(4, $events[0]->other['tier']);
+        $modules = $events[0]->other['unlockedmodules'];
+        $this->assertSame(['url', 'folder', 'assign', 'glossary', 'quiz', 'choice', 'feedback'], array_slice($modules, 0, 7));
+        $this->assertContains('book', $modules);
+        $this->assertNotContains('forum', $modules);
+        $this->assertCount(0, \core\notification::fetch());
+
+        tracker::graduate($this->teacher->id);
+        $this->assertCount(1, $this->unlock_events($sink), 'graduating twice fires nothing more');
+    }
+
+    /**
+     * A brand-new teacher enrolled in two courses in one transaction is still tracked.
+     */
+    public function test_autotrack_two_enrolments_in_one_transaction(): void {
+        global $DB;
+        set_config('autotrack', 1, 'tool_teacherscaffold');
+        $gen = $this->getDataGenerator();
+        $a = $gen->create_course();
+        $b = $gen->create_course();
+        $user = $gen->create_user();
+        $transaction = $DB->start_delegated_transaction();
+        $gen->enrol_user($user->id, $a->id, 'editingteacher');
+        $gen->enrol_user($user->id, $b->id, 'editingteacher');
+        $transaction->allow_commit();
+        $this->assertNotNull(tracker::get_record($user->id));
+    }
 }

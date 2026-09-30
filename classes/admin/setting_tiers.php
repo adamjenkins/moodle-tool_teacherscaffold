@@ -43,7 +43,7 @@ class setting_tiers extends \admin_setting_configtextarea {
             $name,
             $visiblename,
             $description,
-            tier_config::to_text(tier_config::DEFAULT_TIERS),
+            tier_config::to_text(tier_config::default_tiers_for_site()),
             PARAM_RAW,
             60,
             6

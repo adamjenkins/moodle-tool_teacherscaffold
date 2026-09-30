@@ -41,6 +41,11 @@ $observers = [
         'internal' => false,
     ],
     [
+        'eventname' => '\\core\\event\\role_deleted',
+        'callback' => '\\tool_teacherscaffold\\observer::role_deleted',
+        'internal' => false,
+    ],
+    [
         'eventname' => '\\core\\event\\user_deleted',
         'callback' => '\\tool_teacherscaffold\\observer::user_deleted',
         'internal' => false,

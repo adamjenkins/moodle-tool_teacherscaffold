@@ -23,11 +23,14 @@
  */
 
 /**
- * Delete the stage roles, which also removes every assignment of them.
+ * Delete the stage roles (which also removes every assignment of them) and the opt-out preference.
  *
  * @return bool
  */
 function xmldb_tool_teacherscaffold_uninstall() {
+    global $DB;
     \tool_teacherscaffold\local\role_manager::delete_all_roles();
+    // Core removes tables and config, but not user preferences.
+    $DB->delete_records('user_preferences', ['name' => 'tool_teacherscaffold_optedout']);
     return true;
 }

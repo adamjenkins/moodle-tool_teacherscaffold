@@ -16,6 +16,7 @@
 
 namespace tool_teacherscaffold;
 
+use tool_teacherscaffold\local\role_manager;
 use tool_teacherscaffold\local\tracker;
 
 /**
@@ -35,6 +36,9 @@ class observer {
      * @param \core\event\course_module_created $event The event.
      */
     public static function course_module_created(\core\event\course_module_created $event): void {
+        if (!tracker::installed()) {
+            return;
+        }
         tracker::record_module_created((int)$event->userid, (string)$event->other['modulename']);
     }
 
@@ -44,6 +48,9 @@ class observer {
      * @param \core\event\role_assigned $event The event.
      */
     public static function role_assigned(\core\event\role_assigned $event): void {
+        if (!tracker::installed()) {
+            return;
+        }
         global $DB;
         if (!get_config('tool_teacherscaffold', 'autotrack')) {
             return;
@@ -59,13 +66,19 @@ class observer {
         if (tracker::get_record($userid)) {
             return;
         }
-        // Only a genuinely new teacher: no other editing-teacher-type role anywhere.
+        // Only a genuinely new teacher: no editing-teacher-type assignment older than this one
+        // (ids only grow). When one request assigns two courses at once, the earlier assignment's
+        // event tracks the user; the later one's sees the earlier and does nothing.
         $others = $DB->count_records_sql(
             "SELECT COUNT(1)
                FROM {role_assignments} ra
                JOIN {role} r ON r.id = ra.roleid
-              WHERE ra.userid = :userid AND r.archetype = :archetype AND ra.id <> :raid",
-            ['userid' => $userid, 'archetype' => 'editingteacher', 'raid' => (int)($event->other['id'] ?? 0)]
+              WHERE ra.userid = :userid AND r.archetype = :archetype AND ra.id < :raid",
+            [
+                'userid' => $userid,
+                'archetype' => 'editingteacher',
+                'raid' => (int)($event->other['id'] ?? 0),
+            ]
         );
         if ($others) {
             return;
@@ -79,8 +92,26 @@ class observer {
      * @param \core\event\cohort_member_added $event The event.
      */
     public static function cohort_member_added(\core\event\cohort_member_added $event): void {
+        if (!tracker::installed()) {
+            return;
+        }
         if (in_array((int)$event->objectid, tracker::cohort_ids())) {
             tracker::track((int)$event->relateduserid);
+        }
+    }
+
+    /**
+     * If an admin deleted one of the stage roles, rebuild it on the next page view, so that the
+     * teachers at that stage are not left unrestricted until the nightly task.
+     *
+     * @param \core\event\role_deleted $event The event.
+     */
+    public static function role_deleted(\core\event\role_deleted $event): void {
+        if (!tracker::installed()) {
+            return;
+        }
+        if (in_array((int)$event->objectid, role_manager::role_ids())) {
+            role_manager::mark_sync_pending();
         }
     }
 
@@ -90,6 +121,9 @@ class observer {
      * @param \core\event\user_deleted $event The event.
      */
     public static function user_deleted(\core\event\user_deleted $event): void {
+        if (!tracker::installed()) {
+            return;
+        }
         tracker::forget((int)$event->objectid);
     }
 }

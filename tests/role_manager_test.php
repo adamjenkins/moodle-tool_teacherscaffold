@@ -254,4 +254,84 @@ final class role_manager_test extends \advanced_testcase {
         }
         $this->assertContains('mod/quiz:addinstance', $prohibited);
     }
+
+    /**
+     * Roles an admin named with the plugin's prefix, but not exactly as a stage role, are never
+     * deleted by sync or uninstall.
+     */
+    public function test_foreign_prefixed_roles_are_untouched(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $custom = create_role('Custom', 'teacherscaffoldtier1custom', '');
+        $extra = create_role('Extra', 'teacherscaffoldtierextra', '');
+        role_manager::sync();
+        $this->assertTrue($DB->record_exists('role', ['id' => $custom]));
+        $this->assertTrue($DB->record_exists('role', ['id' => $extra]));
+
+        role_manager::delete_all_roles();
+        $this->assertTrue($DB->record_exists('role', ['id' => $custom]));
+        $this->assertTrue($DB->record_exists('role', ['id' => $extra]));
+        $this->assertFalse($DB->record_exists('role', ['shortname' => 'teacherscaffoldtier1']));
+    }
+
+    /**
+     * Saving the settings through the admin framework runs the registered callbacks
+     * (settings.php wiring): new stages rebuild the roles, the master switch lifts restrictions.
+     */
+    public function test_settings_save_runs_callbacks(): void {
+        global $CFG;
+        require_once($CFG->libdir . '/adminlib.php');
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        role_manager::sync();
+        $course = $this->getDataGenerator()->create_course();
+        $teacher = $this->getDataGenerator()->create_and_enrol($course, 'editingteacher');
+        tracker::track($teacher->id);
+
+        admin_write_settings((object)['s_tool_teacherscaffold_tiers' => "page, forum\nquiz"]);
+        $this->assertSame([1, 2], array_keys(role_manager::role_ids()));
+        $this->assertFalse(course_allowed_module($course, 'resource', $teacher));
+
+        admin_write_settings((object)['s_tool_teacherscaffold_enabled' => '0']);
+        $this->assertTrue(course_allowed_module($course, 'resource', $teacher));
+    }
+
+    /**
+     * Deleting a stage role by hand makes the next page view rebuild it.
+     */
+    public function test_deleted_stage_role_is_rebuilt(): void {
+        global $DB;
+        $this->resetAfterTest();
+        role_manager::sync();
+        $old = role_manager::role_id(1);
+        $this->assertFalse(role_manager::needs_sync());
+
+        delete_role($old);
+        $this->assertTrue(role_manager::needs_sync());
+        role_manager::sync_if_needed();
+        $new = role_manager::role_id(1);
+        $this->assertNotEquals($old, $new);
+        $this->assertTrue($DB->record_exists('role', ['id' => $new, 'shortname' => 'teacherscaffoldtier1']));
+    }
+
+    /**
+     * Uninstalling deletes the stage roles and the opt-out preference, and nothing else.
+     */
+    public function test_uninstall_cleanup(): void {
+        global $CFG, $DB;
+        require_once($CFG->dirroot . '/admin/tool/teacherscaffold/db/uninstall.php');
+        $this->resetAfterTest();
+        role_manager::sync();
+        $teacher = $this->getDataGenerator()->create_user();
+        tracker::track($teacher->id);
+        tracker::opt_out($teacher->id);
+        set_user_preference('some_other_preference', 1, $teacher->id);
+
+        $this->assertTrue(xmldb_tool_teacherscaffold_uninstall());
+
+        $like = $DB->sql_like('shortname', ':prefix');
+        $this->assertSame(0, $DB->count_records_select('role', $like, ['prefix' => 'teacherscaffoldtier%']));
+        $this->assertFalse($DB->record_exists('user_preferences', ['name' => tracker::PREF_OPTEDOUT]));
+        $this->assertTrue($DB->record_exists('user_preferences', ['name' => 'some_other_preference']));
+    }
 }

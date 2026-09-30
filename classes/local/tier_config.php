@@ -56,6 +56,23 @@ class tier_config {
     }
 
     /**
+     * The default stages, without modules this site does not have (so the default can be saved).
+     *
+     * @return array[]
+     */
+    public static function default_tiers_for_site(): array {
+        $lockable = self::site_lockable_modules();
+        $tiers = [];
+        foreach (self::DEFAULT_TIERS as $tier) {
+            $tier = array_values(array_intersect($tier, $lockable));
+            if ($tier) {
+                $tiers[] = $tier;
+            }
+        }
+        return $tiers ?: [array_slice($lockable, 0, 1)];
+    }
+
+    /**
      * The stages saved in the plugin configuration, or the defaults.
      *
      * @return array[]

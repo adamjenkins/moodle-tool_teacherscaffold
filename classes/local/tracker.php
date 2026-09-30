@@ -47,6 +47,18 @@ class tracker {
     const PREF_OPTEDOUT = 'tool_teacherscaffold_optedout';
 
     /**
+     * Whether the plugin is installed and no install or upgrade is running, so its tables exist.
+     * Hooks and callbacks can run while only the code is on disk (before install, after uninstall).
+     *
+     * @return bool
+     */
+    public static function installed(): bool {
+        global $CFG;
+        return !during_initial_install() && empty($CFG->upgraderunning)
+            && (bool)get_config('tool_teacherscaffold', 'version');
+    }
+
+    /**
      * Whether the master switch is on (on until an admin turns it off).
      *
      * @return bool
@@ -116,7 +128,8 @@ class tracker {
     }
 
     /**
-     * Save changed fields of a record.
+     * Save changed fields of a record. Only those columns are written, so a stale copy of the
+     * record can never put back values another request has changed.
      *
      * @param stdClass $record Record with id.
      * @param array $fields Field => value.
@@ -124,11 +137,11 @@ class tracker {
      */
     protected static function update(stdClass $record, array $fields): stdClass {
         global $DB;
+        $fields['timemodified'] = time();
+        $DB->update_record('tool_teacherscaffold_user', (object)(['id' => $record->id] + $fields));
         foreach ($fields as $field => $value) {
             $record->$field = $value;
         }
-        $record->timemodified = time();
-        $DB->update_record('tool_teacherscaffold_user', $record);
         return $record;
     }
 
@@ -182,6 +195,31 @@ class tracker {
         if (!self::enabled()) {
             return;
         }
+        if (!self::get_record($userid)) {
+            return;
+        }
+        // One teacher's module creations are counted one at a time (two browsers, or a web
+        // service client, could add modules at the same moment).
+        $lock = \core\lock\lock_config::get_lock_factory('tool_teacherscaffold')->get_lock('user' . $userid, 10);
+        if (!$lock) {
+            debugging('Teacher scaffold: could not lock the progress of user ' . $userid, DEBUG_DEVELOPER);
+            return;
+        }
+        try {
+            self::record_module_created_locked($userid, $modname);
+        } finally {
+            $lock->release();
+        }
+    }
+
+    /**
+     * The body of record_module_created(), run while holding the user's lock.
+     *
+     * @param int $userid The user who added the module.
+     * @param string $modname Module short name.
+     */
+    protected static function record_module_created_locked(int $userid, string $modname): void {
+        global $DB;
         $record = self::get_record($userid);
         if (!$record || $record->status !== self::STATUS_ACTIVE) {
             return;
@@ -310,7 +348,11 @@ class tracker {
     }
 
     /**
-     * Admin action: unlock everything now, without the unlock event (nothing was earned).
+     * Admin action: unlock everything now.
+     *
+     * Fires tier_unlocked once for the final stage, listing every module newly allowed, so that
+     * tool_wizards sees the same end state as after repeated "Unlock next stage". No
+     * congratulation is shown, as the teacher did not earn it.
      *
      * @param int $userid User id.
      * @return bool False if the user is not tracked.
@@ -321,10 +363,22 @@ class tracker {
             return false;
         }
         $config = new tier_config();
+        $wasgraduated = $record->status === self::STATUS_GRADUATED;
+        $unlocked = [];
+        for ($tier = (int)$record->tier + 1; $tier <= $config->final_tier(); $tier++) {
+            $unlocked = array_merge($unlocked, $config->unlocked_by_reaching($tier));
+        }
         self::apply_role(self::update(
             $record,
             ['tier' => $config->final_tier(), 'tieradds' => 0, 'status' => self::STATUS_GRADUATED]
         ));
+        if (!$wasgraduated) {
+            \tool_teacherscaffold\event\tier_unlocked::create([
+                'context' => context_system::instance(),
+                'relateduserid' => $userid,
+                'other' => ['tier' => $config->final_tier(), 'unlockedmodules' => array_values(array_unique($unlocked))],
+            ])->trigger();
+        }
         return true;
     }
 

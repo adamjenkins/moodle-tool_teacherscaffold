@@ -129,8 +129,48 @@ class role_manager {
      */
     public static function sync_if_needed(): void {
         if (self::needs_sync()) {
-            self::sync();
+            // Never make a page wait: if another request is already syncing, it will finish the job.
+            self::sync(null, 0, true);
         }
+    }
+
+    /**
+     * Ask for a sync on the next page view (used when a sync could not run now).
+     */
+    public static function mark_sync_pending(): void {
+        set_config('syncedhash', '', 'tool_teacherscaffold');
+    }
+
+    /**
+     * The stage number encoded in one of this plugin's role shortnames, or null for any other role.
+     *
+     * Only an exact "teacherscaffoldtier<N>" counts, so a role an admin named
+     * "teacherscaffoldtier1custom" is never touched.
+     *
+     * @param string $shortname Role shortname.
+     * @return int|null
+     */
+    public static function tier_from_shortname(string $shortname): ?int {
+        return preg_match('/^' . self::SHORTNAME_PREFIX . '([1-9][0-9]*)$/', $shortname, $m) ? (int)$m[1] : null;
+    }
+
+    /**
+     * This plugin's roles found by shortname: role id => stage number.
+     *
+     * @return int[]
+     */
+    protected static function own_roles(): array {
+        global $DB;
+        $like = $DB->sql_like('shortname', ':prefix');
+        $result = [];
+        $roles = $DB->get_records_select_menu('role', $like, ['prefix' => self::SHORTNAME_PREFIX . '%'], '', 'id, shortname');
+        foreach ($roles as $roleid => $shortname) {
+            $tier = self::tier_from_shortname($shortname);
+            if ($tier !== null) {
+                $result[(int)$roleid] = $tier;
+            }
+        }
+        return $result;
     }
 
     /**
@@ -146,15 +186,26 @@ class role_manager {
      * Make the stage roles match the configuration, then fix everyone's role assignments.
      *
      * @param tier_config|null $config Stage configuration, or null for the saved one.
+     * @param int $timeout Seconds to wait for another sync to finish.
+     * @param bool $onlyifneeded Skip if, once the lock is held, nothing needs syncing any more.
+     * @return bool Whether a sync ran.
      */
-    public static function sync(?tier_config $config = null): void {
-        global $CFG, $DB;
+    public static function sync(?tier_config $config = null, int $timeout = 10, bool $onlyifneeded = false): bool {
+        global $CFG;
 
-        $lock = \core\lock\lock_config::get_lock_factory('tool_teacherscaffold')->get_lock('rolesync', 10);
+        $lock = \core\lock\lock_config::get_lock_factory('tool_teacherscaffold')->get_lock('rolesync', $timeout);
         if (!$lock) {
-            return;
+            if (!$onlyifneeded) {
+                // A change must not be lost: the next page view syncs instead.
+                self::mark_sync_pending();
+            }
+            return false;
         }
         try {
+            if ($onlyifneeded && !self::needs_sync()) {
+                // Another request synced while this one waited.
+                return false;
+            }
             $config = $config ?? new tier_config();
             $syscontext = context_system::instance();
             $ids = self::role_ids();
@@ -164,12 +215,9 @@ class role_manager {
                 self::sync_role_capabilities($ids[$tier], self::wanted_capabilities($config, $tier), $syscontext);
             }
 
-            // Roles of stages that no longer exist, including any found only by shortname.
-            $like = $DB->sql_like('shortname', ':prefix');
-            $known = $DB->get_records_select_menu('role', $like, ['prefix' => self::SHORTNAME_PREFIX . '%'], '', 'id, shortname');
-            foreach ($known as $roleid => $shortname) {
-                $tier = (int)substr($shortname, strlen(self::SHORTNAME_PREFIX));
-                if ($tier < 1 || $tier > $config->count() || $ids[$tier] != $roleid) {
+            // Roles of stages that no longer exist (exact stage shortnames only).
+            foreach (self::own_roles() as $roleid => $tier) {
+                if ($tier > $config->count() || $ids[$tier] != $roleid) {
                     delete_role($roleid);
                 }
             }
@@ -180,6 +228,7 @@ class role_manager {
 
             tracker::clamp_to($config->count());
             tracker::reconcile_all();
+            return true;
         } finally {
             $lock->release();
         }
@@ -249,9 +298,7 @@ class role_manager {
      * Delete every stage role. Used on uninstall.
      */
     public static function delete_all_roles(): void {
-        global $DB;
-        $like = $DB->sql_like('shortname', ':prefix');
-        foreach ($DB->get_fieldset_select('role', 'id', $like, ['prefix' => self::SHORTNAME_PREFIX . '%']) as $roleid) {
+        foreach (array_keys(self::own_roles()) as $roleid) {
             delete_role($roleid);
         }
     }

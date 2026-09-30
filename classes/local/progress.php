@@ -71,11 +71,15 @@ class progress {
      * @return array With int keys 'done' and 'total'.
      */
     public static function for_user(\stdClass $record, tier_config $config): array {
+        $modules = $config->modules_in((int)$record->tier);
+        if (!$modules) {
+            // Nothing left to use at this stage (its modules were uninstalled): pass it under either rule.
+            return ['done' => 0, 'total' => 0];
+        }
         if (self::rule() === self::RULE_ADDCOUNT) {
             $total = self::unlock_count();
             return ['done' => min((int)$record->tieradds, $total), 'total' => $total];
         }
-        $modules = $config->modules_in((int)$record->tier);
         $done = count(array_intersect($modules, self::used_modules((int)$record->userid)));
         return ['done' => $done, 'total' => count($modules)];
     }
