@@ -17,7 +17,13 @@
 namespace tool_teacherscaffold;
 
 use core\hook\output\before_http_headers;
+use html_writer;
+use moodle_url;
+use stdClass;
+use tool_teacherscaffold\local\progress;
 use tool_teacherscaffold\local\role_manager;
+use tool_teacherscaffold\local\tier_config;
+use tool_teacherscaffold\local\tracker;
 
 /**
  * Hook callbacks for Teacher scaffold.
@@ -29,11 +35,49 @@ use tool_teacherscaffold\local\role_manager;
 class hook_callbacks {
 
     /**
-     * Before headers: re-sync the stage roles if plugins changed.
+     * Before headers: re-sync the stage roles if plugins changed, and queue the progress notice.
+     *
+     * The notice is queued as a session notification: header() dispatches this hook before
+     * course_content_header() prints the queued notifications (lib/classes/output/core_renderer.php),
+     * so it appears on the same course page.
      *
      * @param before_http_headers $hook The hook.
      */
     public static function before_http_headers(before_http_headers $hook): void {
+        global $PAGE, $USER;
+
         role_manager::sync_if_needed();
+
+        if (!tracker::enabled() || !isloggedin() || isguestuser()) {
+            return;
+        }
+        if (!$PAGE->has_set_url() || !$PAGE->url->compare(new moodle_url('/course/view.php'), URL_MATCH_BASE)) {
+            return;
+        }
+        if (!$PAGE->user_is_editing()) {
+            return;
+        }
+        $record = tracker::get_record((int)$USER->id);
+        if (!$record || $record->status !== tracker::STATUS_ACTIVE) {
+            return;
+        }
+        \core\notification::add(self::progress_notice_html($record, $PAGE->url), \core\notification::INFO);
+    }
+
+    /**
+     * The one-line progress notice with its "Show me everything" link.
+     *
+     * @param stdClass $record Row of tool_teacherscaffold_user.
+     * @param moodle_url $returnurl Page to return to after opting out.
+     * @return string HTML
+     */
+    public static function progress_notice_html(stdClass $record, moodle_url $returnurl): string {
+        $counts = progress::for_user($record, new tier_config());
+        $key = progress::rule() === progress::RULE_ADDCOUNT ? 'noticeprogressadd' : 'noticeprogresstry';
+        $optout = new moodle_url('/admin/tool/teacherscaffold/optout.php',
+            ['returnurl' => $returnurl->out_as_local_url(false)]);
+        return html_writer::span(s(get_string($key, 'tool_teacherscaffold', (object)$counts))) . ' ' .
+            html_writer::link($optout, s(get_string('noticeoptout', 'tool_teacherscaffold')),
+                ['class' => 'ms-2 tool-teacherscaffold-optout']);
     }
 }
