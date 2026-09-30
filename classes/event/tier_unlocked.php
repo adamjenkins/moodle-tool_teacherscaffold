@@ -30,7 +30,6 @@ namespace tool_teacherscaffold\event;
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class tier_unlocked extends \core\event\base {
-
     /**
      * Initialise the event.
      */

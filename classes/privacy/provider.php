@@ -33,11 +33,10 @@ use tool_teacherscaffold\local\tracker;
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class provider implements
-        \core_privacy\local\metadata\provider,
-        \core_privacy\local\request\core_userlist_provider,
-        \core_privacy\local\request\plugin\provider,
-        \core_privacy\local\request\user_preference_provider {
-
+    \core_privacy\local\metadata\provider,
+    \core_privacy\local\request\core_userlist_provider,
+    \core_privacy\local\request\plugin\provider,
+    \core_privacy\local\request\user_preference_provider {
     /**
      * Describe the stored data.
      *
@@ -141,8 +140,12 @@ class provider implements
     public static function export_user_preferences(int $userid) {
         $value = get_user_preferences(tracker::PREF_OPTEDOUT, null, $userid);
         if ($value !== null) {
-            writer::export_user_preference('tool_teacherscaffold', tracker::PREF_OPTEDOUT,
-                transform::yesno($value), get_string('privacy:metadata:preference:optedout', 'tool_teacherscaffold'));
+            writer::export_user_preference(
+                'tool_teacherscaffold',
+                tracker::PREF_OPTEDOUT,
+                transform::yesno($value),
+                get_string('privacy:metadata:preference:optedout', 'tool_teacherscaffold')
+            );
         }
     }
 

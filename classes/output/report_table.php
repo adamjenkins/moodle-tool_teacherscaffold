@@ -34,7 +34,6 @@ use tool_teacherscaffold\local\tracker;
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class report_table extends \table_sql {
-
     /** @var tier_config Stage configuration. */
     protected tier_config $config;
 
@@ -87,8 +86,11 @@ class report_table extends \table_sql {
      * @return string
      */
     public function col_tier($row) {
-        return s(get_string('stagevalue', 'tool_teacherscaffold',
-            (object)['tier' => min((int)$row->tier, $this->config->final_tier()), 'total' => $this->config->final_tier()]));
+        return s(get_string(
+            'stagevalue',
+            'tool_teacherscaffold',
+            (object)['tier' => min((int)$row->tier, $this->config->final_tier()), 'total' => $this->config->final_tier()]
+        ));
     }
 
     /**

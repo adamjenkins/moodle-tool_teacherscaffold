@@ -31,7 +31,6 @@ use stdClass;
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class tracker {
-
     /** @var string Being guided through the stages. */
     const STATUS_ACTIVE = 'active';
 
@@ -156,8 +155,10 @@ class tracker {
         global $DB;
         $syscontext = context_system::instance();
         $has = false;
-        $assignments = $DB->get_records('role_assignments',
-            ['userid' => $userid, 'component' => self::COMPONENT, 'contextid' => $syscontext->id]);
+        $assignments = $DB->get_records(
+            'role_assignments',
+            ['userid' => $userid, 'component' => self::COMPONENT, 'contextid' => $syscontext->id]
+        );
         foreach ($assignments as $ra) {
             if (!$has && $roleid && (int)$ra->roleid === $roleid) {
                 $has = true;
@@ -187,8 +188,10 @@ class tracker {
         }
         if (!$DB->record_exists('tool_teacherscaffold_usage', ['userid' => $userid, 'modname' => $modname])) {
             try {
-                $DB->insert_record('tool_teacherscaffold_usage',
-                    (object)['userid' => $userid, 'modname' => $modname, 'timefirstused' => time()]);
+                $DB->insert_record(
+                    'tool_teacherscaffold_usage',
+                    (object)['userid' => $userid, 'modname' => $modname, 'timefirstused' => time()]
+                );
             } catch (\dml_write_exception $e) {
                 // Recorded by a concurrent request.
                 debugging('Concurrent first use of ' . $modname . ' for user ' . $userid, DEBUG_DEVELOPER);
@@ -199,8 +202,10 @@ class tracker {
             $record = self::update($record, ['tieradds' => (int)$record->tieradds + 1]);
         }
         // Loop, so that a stage whose modules were all used already (or uninstalled) is passed too.
-        while ($record && $record->status === self::STATUS_ACTIVE
-                && progress::is_complete(progress::for_user($record, $config))) {
+        while (
+            $record && $record->status === self::STATUS_ACTIVE
+                && progress::is_complete(progress::for_user($record, $config))
+        ) {
             self::advance($userid, true, $config);
             $record = self::get_record($userid);
         }
@@ -233,8 +238,11 @@ class tracker {
         ])->trigger();
 
         if ($earned && $unlocked && !self::wizards_active()) {
-            \core\notification::success(get_string('unlocked', 'tool_teacherscaffold',
-                s(tier_config::module_names($unlocked))));
+            \core\notification::success(get_string(
+                'unlocked',
+                'tool_teacherscaffold',
+                s(tier_config::module_names($unlocked))
+            ));
         }
         return true;
     }
@@ -313,8 +321,10 @@ class tracker {
             return false;
         }
         $config = new tier_config();
-        self::apply_role(self::update($record,
-            ['tier' => $config->final_tier(), 'tieradds' => 0, 'status' => self::STATUS_GRADUATED]));
+        self::apply_role(self::update(
+            $record,
+            ['tier' => $config->final_tier(), 'tieradds' => 0, 'status' => self::STATUS_GRADUATED]
+        ));
         return true;
     }
 
@@ -338,11 +348,13 @@ class tracker {
      */
     public static function clamp_to(int $maxtier): void {
         global $DB;
-        $DB->execute("UPDATE {tool_teacherscaffold_user}
+        $DB->execute(
+            "UPDATE {tool_teacherscaffold_user}
                          SET tier = :maxtier, tieradds = 0, timemodified = :now
                        WHERE tier > :maxtier2 AND status <> :graduated",
             ['maxtier' => max(1, $maxtier), 'maxtier2' => max(1, $maxtier), 'now' => time(),
-             'graduated' => self::STATUS_GRADUATED]);
+            'graduated' => self::STATUS_GRADUATED]
+        );
     }
 
     /**
@@ -373,7 +385,8 @@ class tracker {
                FROM {role_assignments} ra
           LEFT JOIN {tool_teacherscaffold_user} t ON t.userid = ra.userid
               WHERE ra.component = :component AND t.id IS NULL",
-            ['component' => self::COMPONENT]);
+            ['component' => self::COMPONENT]
+        );
         foreach ($orphans as $ra) {
             role_unassign($ra->roleid, $ra->userid, $syscontext->id, self::COMPONENT);
         }
@@ -396,7 +409,9 @@ class tracker {
             "SELECT DISTINCT cm.userid
                FROM {cohort_members} cm
           LEFT JOIN {tool_teacherscaffold_user} t ON t.userid = cm.userid
-              WHERE cm.cohortid $insql AND t.id IS NULL", $params);
+              WHERE cm.cohortid $insql AND t.id IS NULL",
+            $params
+        );
         $count = 0;
         foreach ($userids as $userid) {
             $count += self::track((int)$userid) ? 1 : 0;

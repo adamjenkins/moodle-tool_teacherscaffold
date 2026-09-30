@@ -32,7 +32,6 @@ use context_system;
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class role_manager {
-
     /** @var string Shortname prefix of the stage roles; the stage number follows. */
     const SHORTNAME_PREFIX = 'teacherscaffoldtier';
 

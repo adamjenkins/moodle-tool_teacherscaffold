@@ -29,7 +29,6 @@ use tool_teacherscaffold\local\tracker;
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class observer {
-
     /**
      * A module was added (form, drag and drop, duplicate). Restores do not fire this event.
      *
@@ -66,7 +65,8 @@ class observer {
                FROM {role_assignments} ra
                JOIN {role} r ON r.id = ra.roleid
               WHERE ra.userid = :userid AND r.archetype = :archetype AND ra.id <> :raid",
-            ['userid' => $userid, 'archetype' => 'editingteacher', 'raid' => (int)($event->other['id'] ?? 0)]);
+            ['userid' => $userid, 'archetype' => 'editingteacher', 'raid' => (int)($event->other['id'] ?? 0)]
+        );
         if ($others) {
             return;
         }

@@ -28,7 +28,6 @@ namespace tool_teacherscaffold\local;
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class tier_config {
-
     /** @var string[] Modules that are never restricted: question banks are infrastructure, subsections are course structure. */
     const NEVER_LOCKED = ['qbank', 'subsection'];
 

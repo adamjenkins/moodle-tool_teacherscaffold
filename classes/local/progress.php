@@ -24,7 +24,6 @@ namespace tool_teacherscaffold\local;
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class progress {
-
     /** @var string Unlock when every module of the stage has been added at least once. */
     const RULE_TRYEACH = 'trieach';
 

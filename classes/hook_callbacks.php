@@ -33,7 +33,6 @@ use tool_teacherscaffold\local\tracker;
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class hook_callbacks {
-
     /**
      * Before headers: re-sync the stage roles if plugins changed, and queue the progress notice.
      *
@@ -74,10 +73,15 @@ class hook_callbacks {
     public static function progress_notice_html(stdClass $record, moodle_url $returnurl): string {
         $counts = progress::for_user($record, new tier_config());
         $key = progress::rule() === progress::RULE_ADDCOUNT ? 'noticeprogressadd' : 'noticeprogresstry';
-        $optout = new moodle_url('/admin/tool/teacherscaffold/optout.php',
-            ['returnurl' => $returnurl->out_as_local_url(false)]);
+        $optout = new moodle_url(
+            '/admin/tool/teacherscaffold/optout.php',
+            ['returnurl' => $returnurl->out_as_local_url(false)]
+        );
         return html_writer::span(s(get_string($key, 'tool_teacherscaffold', (object)$counts))) . ' ' .
-            html_writer::link($optout, s(get_string('noticeoptout', 'tool_teacherscaffold')),
-                ['class' => 'ms-2 tool-teacherscaffold-optout']);
+            html_writer::link(
+                $optout,
+                s(get_string('noticeoptout', 'tool_teacherscaffold')),
+                ['class' => 'ms-2 tool-teacherscaffold-optout']
+            );
     }
 }

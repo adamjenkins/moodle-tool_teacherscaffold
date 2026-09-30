@@ -31,12 +31,19 @@
  * @param stdClass $course Current course.
  * @param context_course $coursecontext Course context.
  */
-function tool_teacherscaffold_extend_navigation_user_settings(navigation_node $navigation, $user, $usercontext,
-        $course, $coursecontext) {
+function tool_teacherscaffold_extend_navigation_user_settings(
+    navigation_node $navigation,
+    $user,
+    $usercontext,
+    $course,
+    $coursecontext
+) {
     global $PAGE, $USER;
 
-    if ((int)$user->id !== (int)$USER->id || !$PAGE->has_set_url()
-            || !$PAGE->url->compare(new moodle_url('/user/preferences.php'), URL_MATCH_BASE)) {
+    if (
+        (int)$user->id !== (int)$USER->id || !$PAGE->has_set_url()
+            || !$PAGE->url->compare(new moodle_url('/user/preferences.php'), URL_MATCH_BASE)
+    ) {
         return;
     }
     if (!\tool_teacherscaffold\local\tracker::get_record((int)$USER->id)) {
@@ -44,9 +51,13 @@ function tool_teacherscaffold_extend_navigation_user_settings(navigation_node $n
     }
     $usernode = $navigation->find('useraccount', navigation_node::TYPE_CONTAINER);
     if ($usernode) {
-        $usernode->add_node(navigation_node::create(get_string('preferences', 'tool_teacherscaffold'),
-            new moodle_url('/admin/tool/teacherscaffold/preferences.php'), navigation_node::TYPE_SETTING,
-            null, 'tool_teacherscaffold_preferences'));
+        $usernode->add_node(navigation_node::create(
+            get_string('preferences', 'tool_teacherscaffold'),
+            new moodle_url('/admin/tool/teacherscaffold/preferences.php'),
+            navigation_node::TYPE_SETTING,
+            null,
+            'tool_teacherscaffold_preferences'
+        ));
     }
 }
 

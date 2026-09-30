@@ -27,7 +27,6 @@ use tool_teacherscaffold\local\tracker;
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class sync_roles extends \core\task\scheduled_task {
-
     /**
      * Task name.
      *

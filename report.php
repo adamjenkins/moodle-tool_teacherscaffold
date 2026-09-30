@@ -71,11 +71,19 @@ if ($data = $form->get_data()) {
         }
     }
     if ($added) {
-        redirect($baseurl, get_string('addteachersdone', 'tool_teacherscaffold', implode(', ', $added)),
-            null, \core\output\notification::NOTIFY_SUCCESS);
+        redirect(
+            $baseurl,
+            get_string('addteachersdone', 'tool_teacherscaffold', implode(', ', $added)),
+            null,
+            \core\output\notification::NOTIFY_SUCCESS
+        );
     }
-    redirect($baseurl, get_string('addteachersnone', 'tool_teacherscaffold'), null,
-        \core\output\notification::NOTIFY_WARNING);
+    redirect(
+        $baseurl,
+        get_string('addteachersnone', 'tool_teacherscaffold'),
+        null,
+        \core\output\notification::NOTIFY_WARNING
+    );
 }
 
 echo $OUTPUT->header();
@@ -106,7 +114,8 @@ $switchroles = $DB->get_records_sql(
        JOIN {role_capabilities} rc ON rc.roleid = r.id AND rc.contextid = :syscontext
       WHERE fromrole.archetype IN ('editingteacher', 'teacher')
         AND rc.capability = :cap AND rc.permission = :allow",
-    ['syscontext' => context_system::instance()->id, 'cap' => 'moodle/course:manageactivities', 'allow' => CAP_ALLOW]);
+    ['syscontext' => context_system::instance()->id, 'cap' => 'moodle/course:manageactivities', 'allow' => CAP_ALLOW]
+);
 if ($switchroles) {
     $names = array_map(fn($role) => role_get_name($role), $switchroles);
     $checks[] = get_string('healthswitchrole', 'tool_teacherscaffold', implode(', ', $names));

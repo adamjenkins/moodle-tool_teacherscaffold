@@ -51,8 +51,12 @@ if (!$record) {
 if ($optin && confirm_sesskey()) {
     tracker::opt_in((int)$USER->id);
     $record = tracker::get_record((int)$USER->id);
-    redirect($url, get_string('optindone', 'tool_teacherscaffold', (int)$record->tier), null,
-        \core\output\notification::NOTIFY_SUCCESS);
+    redirect(
+        $url,
+        get_string('optindone', 'tool_teacherscaffold', (int)$record->tier),
+        null,
+        \core\output\notification::NOTIFY_SUCCESS
+    );
 }
 
 echo $OUTPUT->header();
@@ -65,12 +69,18 @@ if ($record->status === tracker::STATUS_ACTIVE) {
         'tier' => (int)$record->tier,
         'modules' => tier_config::module_names($config->allowed_at((int)$record->tier)),
     ])));
-    echo $OUTPUT->single_button(new moodle_url('/admin/tool/teacherscaffold/optout.php',
-        ['returnurl' => $url->out_as_local_url(false)]), get_string('noticeoptout', 'tool_teacherscaffold'), 'get');
+    echo $OUTPUT->single_button(new moodle_url(
+        '/admin/tool/teacherscaffold/optout.php',
+        ['returnurl' => $url->out_as_local_url(false)]
+    ), get_string('noticeoptout', 'tool_teacherscaffold'), 'get');
 } else if ($record->status === tracker::STATUS_OPTEDOUT) {
     echo html_writer::tag('p', s(get_string('preferencesoptedout', 'tool_teacherscaffold')));
-    echo $OUTPUT->single_button(new moodle_url($url, ['optin' => 1, 'sesskey' => sesskey()]),
-        get_string('optin', 'tool_teacherscaffold'), 'post', ['type' => single_button::BUTTON_PRIMARY]);
+    echo $OUTPUT->single_button(
+        new moodle_url($url, ['optin' => 1, 'sesskey' => sesskey()]),
+        get_string('optin', 'tool_teacherscaffold'),
+        'post',
+        ['type' => single_button::BUTTON_PRIMARY]
+    );
 } else {
     echo html_writer::tag('p', s(get_string('preferencesgraduated', 'tool_teacherscaffold')));
 }

@@ -31,7 +31,6 @@ use tool_teacherscaffold\local\tier_config;
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class setting_tiers extends \admin_setting_configtextarea {
-
     /**
      * Constructor.
      *
@@ -40,8 +39,15 @@ class setting_tiers extends \admin_setting_configtextarea {
      * @param string $description Description.
      */
     public function __construct($name, $visiblename, $description) {
-        parent::__construct($name, $visiblename, $description, tier_config::to_text(tier_config::DEFAULT_TIERS),
-            PARAM_RAW, 60, 6);
+        parent::__construct(
+            $name,
+            $visiblename,
+            $description,
+            tier_config::to_text(tier_config::DEFAULT_TIERS),
+            PARAM_RAW,
+            60,
+            6
+        );
     }
 
     /**
@@ -105,8 +111,11 @@ class setting_tiers extends \admin_setting_configtextarea {
             if ($tier < $config->final_tier()) {
                 $missing = array_diff($config->get_tiers()[$tier - 1], $config->get_lockable());
                 if ($missing) {
-                    $item .= ' ' . html_writer::span(s(get_string('modulesnotinstalled', 'tool_teacherscaffold',
-                        implode(', ', $missing))), 'text-muted');
+                    $item .= ' ' . html_writer::span(s(get_string(
+                        'modulesnotinstalled',
+                        'tool_teacherscaffold',
+                        implode(', ', $missing)
+                    )), 'text-muted');
                 }
             }
             $items[] = $item;
