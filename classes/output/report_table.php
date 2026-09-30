@@ -59,6 +59,7 @@ class report_table extends \table_sql {
         $this->no_sorting('actions');
         $this->sortable(true, 'lastname');
         $this->collapsible(false);
+        $this->set_attribute('id', 'tool_teacherscaffold_report');
 
         $namefields = \core_user\fields::for_name()->get_sql('u', false, '', '', false)->selects;
         $this->set_sql(
