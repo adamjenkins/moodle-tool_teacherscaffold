@@ -49,7 +49,8 @@ if ($action && isset($actions[$action])) {
             'reset' => tracker::reset($userid),
             'graduate' => tracker::graduate($userid),
         };
-        $message = $done ? get_string($actions[$action] . 'done', 'tool_teacherscaffold', $name) : '';
+        // Redirect messages are printed unescaped by the notification template, so escape here.
+        $message = $done ? s(get_string($actions[$action] . 'done', 'tool_teacherscaffold', $name)) : '';
         redirect($baseurl, $message, null, \core\output\notification::NOTIFY_SUCCESS);
     }
     echo $OUTPUT->header();
@@ -73,7 +74,7 @@ if ($data = $form->get_data()) {
     if ($added) {
         redirect(
             $baseurl,
-            get_string('addteachersdone', 'tool_teacherscaffold', implode(', ', $added)),
+            s(get_string('addteachersdone', 'tool_teacherscaffold', implode(', ', $added))),
             null,
             \core\output\notification::NOTIFY_SUCCESS
         );

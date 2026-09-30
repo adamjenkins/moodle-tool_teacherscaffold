@@ -56,3 +56,16 @@ Feature: Admins manage the stages and guided teachers, and teachers can turn gui
     When I press "Turn the step-by-step list back on"
     Then I should see "The step-by-step list is back on. You are at stage 1."
     And I should see "You can add: File, Page, Forum, Text and media area."
+
+  Scenario: Teacher names are shown as text, not markup, in report messages
+    Given the following "users" exist:
+      | username | firstname      | lastname | email                |
+      | teacher2 | Theo &amp;     | Markup   | teacher2@example.com |
+    And the following "tool_teacherscaffold > tracked teachers" exist:
+      | user     |
+      | teacher2 |
+    And I log in as "admin"
+    And I navigate to "Courses > Teacher scaffold > Guided teachers" in site administration
+    When I click on "Unlock next stage" "link" in the "Markup" "table_row"
+    And I press "Continue"
+    Then I should see "The next stage has been unlocked for Theo &amp; Markup."
