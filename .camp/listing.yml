@@ -1,0 +1,24 @@
+# camp listing manifest — descriptive content for your plugin's page.
+# Edit freely and commit; camp ingests this file at each tagged release.
+# Schema: https://camp-registry.org/schema/listing.schema.json
+name: tool_teacherscaffold
+summary: 'An admin tool that eases new teachers into Moodle by unlocking activity types in stages as they try the ones they already have.'
+description: |
+  Guided teachers start with a few simple activity types (File, Page, Forum,
+  Text and media area). More are unlocked as they use them, stage by stage,
+  until everything is available. Each stage is a plugin-managed site role that
+  prohibits adding the still-locked activities, and by default also blocks
+  import and restore. Admins configure the stages and the unlock rule, add
+  teachers automatically or by cohort, and follow progress in a "Guided
+  teachers" report. Any teacher can choose "Show me everything" at any time.
+labels:
+  # Required disclosure labels — pick all that apply (RFC §4.7):
+  #   fully-free | freemium | paid-service | external-account
+  #   donation-supported | commercial-support-available
+  - fully-free
+# screenshots:
+#   - path: .camp/screenshots/overview.png
+#     caption: Main view
+links:
+  docs: https://github.com/adamjenkins/moodle-tool_teacherscaffold#readme
+  issues: https://github.com/adamjenkins/moodle-tool_teacherscaffold/issues
