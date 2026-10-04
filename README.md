@@ -67,7 +67,7 @@ Teacher scaffold shows its own short "Nice work!" message instead. Neither plugi
 
 ## Requirements
 
-Moodle 5.2.
+Moodle 5.2 or 5.3.
 
 ## Licence
 
