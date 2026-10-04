@@ -3,7 +3,7 @@
     "description": "A Moodle admin tool that eases new teachers into Moodle, starting them with a small set of simple activity types and unlocking more in stages",
     "type": "moodle-tool",
     "require": {
-        "moodle/moodle": ">=5.2 <5.4",
+        "moodle/moodle": "^5.2",
         "moodle/composer-installer": "^1.0"
     },
     "license": "GPL-3.0-or-later"
