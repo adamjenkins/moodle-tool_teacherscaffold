@@ -16,9 +16,23 @@ labels:
   #   fully-free | freemium | paid-service | external-account
   #   donation-supported | commercial-support-available
   - fully-free
-# screenshots:
-#   - path: .camp/screenshots/overview.png
-#     caption: Main view
+screenshots:
+  - path: .camp/screenshots/01-progress-notice.png
+    caption: 'A guided teacher in edit mode sees one line: "Getting started: 2 of 4 tried in this stage." | Hannah Lee''s course page, edit mode on, blue notice with the "Show me everything" link above the General section.'
+  - path: .camp/screenshots/02-chooser-stage-1.png
+    caption: 'At stage 1 the activity chooser offers File, Forum, Page and Text and media area. | Core "Add an activity or resource" dialog, All tab, exactly those four items.'
+  - path: .camp/screenshots/03-stage-unlocked.png
+    caption: 'After trying all four, stage 2 unlocks: "Nice work! You''ve unlocked new activities: URL, Folder, Assignment and Glossary." | The same course after she added a forum and a text area; green message at the top (shown by Wizards).'
+  - path: .camp/screenshots/04-chooser-stage-2.png
+    caption: Stage 2 adds Assignment, Folder, Glossary and URL to the chooser. | The chooser with eight items.
+  - path: .camp/screenshots/05-show-me-everything.png
+    caption: '"Show me everything" takes one confirmation and can be reversed from preferences. | Paul Smith''s confirmation page with Cancel and Continue (not confirmed).'
+  - path: .camp/screenshots/06-teacher-preferences.png
+    caption: 'Each teacher can see their stage and what they can add, in Preferences. | David Okafor''s "Step-by-step activity list" page: "You are at stage 2. You can add: …" and a "Show me everything" button.'
+  - path: .camp/screenshots/07-guided-teachers-report.png
+    caption: 'The Guided teachers page: stage, progress and status for each teacher, with actions and checks. | Admin page: "Everything looks fine." checks, Add teachers form, table of five teachers (Guided, Chose to see everything, Everything unlocked).'
+  - path: .camp/screenshots/08-admin-settings.png
+    caption: 'Settings: the stages, the unlock rule, import and restore, and how teachers are added. | Admin settings page, full length, with the stage list rendered under the Stages box.'
 links:
   docs: https://github.com/adamjenkins/moodle-tool_teacherscaffold#readme
   issues: https://github.com/adamjenkins/moodle-tool_teacherscaffold/issues
